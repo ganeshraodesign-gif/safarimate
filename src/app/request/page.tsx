@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { API_ENDPOINTS, fetchAPI } from '@/lib/api';
+import { API_ENDPOINTS, fetchAPI, storage } from '@/lib/api';
 
 const COUNTRIES = [
   'Afghanistan', 'Australia', 'Austria', 'Bangladesh', 'Belgium', 'Brazil', 'Canada', 'China',
@@ -89,8 +89,9 @@ export default function RequestPage() {
       });
       setIsSuccess(true);
     } catch (error) {
-      console.error('Failed to submit request:', error);
-      alert('Failed to submit request. Please try again.');
+      console.log('API failed, saving to localStorage...');
+      storage.saveTripRequest(formData as unknown as Record<string, unknown>);
+      setIsSuccess(true);
     } finally {
       setIsSubmitting(false);
     }

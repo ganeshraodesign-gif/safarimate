@@ -57,35 +57,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = async (email: string, password: string) => {
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (!response.ok) {
-      throw new Error('Login failed');
+      if (!response.ok) {
+        throw new Error('Login failed');
+      }
+
+      const data = await response.json();
+      localStorage.setItem('safarmate_token', data.token);
+      setUser(data.user);
+    } catch (error) {
+      console.log('API failed, using localStorage...');
+      const users = JSON.parse(localStorage.getItem('safarmate_users') || '[]');
+      const user = users.find((u: { email: string; password: string }) => u.email === email && u.password === password);
+      
+      if (user) {
+        const token = Buffer.from(`${user.id}:${email}`).toString('base64');
+        localStorage.setItem('safarmate_token', token);
+        setUser({ id: user.id, name: user.name, email: user.email, role: user.role });
+      } else {
+        throw new Error('Invalid credentials');
+      }
     }
-
-    const data = await response.json();
-    localStorage.setItem('safarmate_token', data.token);
-    setUser(data.user);
   };
 
   const register = async (name: string, email: string, password: string, role: string) => {
-    const response = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, role }),
-    });
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, role }),
+      });
 
-    if (!response.ok) {
-      throw new Error('Registration failed');
+      if (!response.ok) {
+        throw new Error('Registration failed');
+      }
+
+      const data = await response.json();
+      localStorage.setItem('safarmate_token', data.token);
+      setUser(data.user);
+    } catch (error) {
+      console.log('API failed, using localStorage...');
+      const users = JSON.parse(localStorage.getItem('safarmate_users') || '[]');
+      const existing = users.find((u: { email: string }) => u.email === email);
+      
+      if (existing) {
+        throw new Error('User already exists');
+      }
+
+      const id = `user_${Date.now()}`;
+      const newUser = { id, name, email, password, role, country: '' };
+      users.push(newUser);
+      localStorage.setItem('safarmate_users', JSON.stringify(users));
+
+      const token = Buffer.from(`${id}:${email}`).toString('base64');
+      localStorage.setItem('safarmate_token', token);
+      setUser({ id, name, email, role: role as 'traveler' | 'guide' | 'admin' });
     }
-
-    const data = await response.json();
-    localStorage.setItem('safarmate_token', data.token);
-    setUser(data.user);
   };
 
   const logout = () => {

@@ -55,15 +55,65 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     ...options.headers,
   };
 
-  const response = await fetch(endpoint, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(endpoint, {
+      ...options,
+      headers,
+    });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Something went wrong' }));
-    throw new Error(error.message || 'API request failed');
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Something went wrong' }));
+      throw new Error(error.message || 'API request failed');
+    }
+
+    return response.json();
+  } catch (error) {
+    console.log('API call failed, trying localStorage fallback...');
+    throw error;
   }
-
-  return response.json();
 }
+
+export const storage = {
+  saveTripRequest: (data: Record<string, unknown>) => {
+    if (typeof window === 'undefined') return;
+    const existing = JSON.parse(localStorage.getItem('trip_requests') || '[]');
+    const newRequest = { ...data, id: `TRIP-${Date.now()}`, createdAt: new Date().toISOString() };
+    existing.push(newRequest);
+    localStorage.setItem('trip_requests', JSON.stringify(existing));
+    return newRequest;
+  },
+
+  getTripRequests: () => {
+    if (typeof window === 'undefined') return [];
+    return JSON.parse(localStorage.getItem('trip_requests') || '[]');
+  },
+
+  saveGuideApplication: (data: Record<string, unknown>) => {
+    if (typeof window === 'undefined') return;
+    const existing = JSON.parse(localStorage.getItem('guide_applications') || '[]');
+    const newApp = { ...data, id: `GUIDE-${Date.now()}`, status: 'pending', createdAt: new Date().toISOString() };
+    existing.push(newApp);
+    localStorage.setItem('guide_applications', JSON.stringify(existing));
+    return newApp;
+  },
+
+  getGuideApplications: () => {
+    if (typeof window === 'undefined') return [];
+    return JSON.parse(localStorage.getItem('guide_applications') || '[]');
+  },
+
+  saveUser: (user: unknown) => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('safarmate_user', JSON.stringify(user));
+  },
+
+  getUser: () => {
+    if (typeof window === 'undefined') return null;
+    return JSON.parse(localStorage.getItem('safarmate_user') || 'null');
+  },
+
+  clearAll: () => {
+    if (typeof window === 'undefined') return;
+    localStorage.clear();
+  }
+};

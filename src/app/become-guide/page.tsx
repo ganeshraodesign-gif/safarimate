@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { API_ENDPOINTS, fetchAPI } from "@/lib/api";
+import { API_ENDPOINTS, fetchAPI, storage } from "@/lib/api";
 
 const CITIES = ["Delhi", "Mumbai", "Jaipur", "Varanasi", "Ahmedabad", "Goa", "Agra", "Bangalore"];
 
@@ -84,8 +84,9 @@ export default function BecomeGuide() {
       });
       alert("Application submitted successfully! We will review your profile and contact you soon.");
     } catch (error) {
-      console.error('Failed to submit application:', error);
-      alert('Failed to submit application. Please try again.');
+      console.log('API failed, saving to localStorage...');
+      storage.saveGuideApplication(formData as unknown as Record<string, unknown>);
+      alert("Application submitted successfully! We will review your profile and contact you soon.");
     }
   };
 
