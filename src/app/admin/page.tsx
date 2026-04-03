@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   FileText,
@@ -279,15 +279,29 @@ function RatingStars({ rating }: { rating: number }) {
 export default function AdminPanel() {
   const [activeSection, setActiveSection] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [tripRequests, setTripRequests] = useState<any[]>([]);
+  const [guideApplications, setGuideApplications] = useState<any[]>([]);
+  const [userRegistrations, setUserRegistrations] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const trips = JSON.parse(localStorage.getItem('trip_requests') || '[]');
+      const guides = JSON.parse(localStorage.getItem('safarmate_guide_applications') || '[]');
+      const registrations = JSON.parse(localStorage.getItem('safarmate_registrations') || '[]');
+      setTripRequests(trips);
+      setGuideApplications(guides);
+      setUserRegistrations(registrations);
+    }
+  }, []);
 
   const stats = {
-    totalTrips: 156,
+    totalTrips: 156 + tripRequests.length,
     completedTrips: 124,
-    pendingTrips: 32,
-    totalGuides: 48,
+    pendingTrips: 32 + tripRequests.length,
+    totalGuides: 48 + guideApplications.length,
     verifiedGuides: 42,
-    pendingGuides: 6,
-    totalTravelers: 892,
+    pendingGuides: 6 + guideApplications.length,
+    totalTravelers: 892 + userRegistrations.filter((r: any) => r.role === 'traveler').length,
     totalEarnings: 1245000,
   };
 
@@ -386,56 +400,85 @@ export default function AdminPanel() {
         );
 
       case "requests":
+        const allRequests = [...tripRequests, ...userRegistrations.map((r: any) => ({
+          id: r.id,
+          fullName: r.name,
+          email: r.email,
+          city: r.city || 'Not specified',
+          startDate: r.startDate || r.createdAt,
+          endDate: r.endDate || '',
+          serviceType: r.serviceType || r.role,
+          status: r.status || 'pending',
+          type: r.role || 'traveler'
+        }))];
+        
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-[#2B2B2B]">Trip Requests</h2>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B6B6B]" />
-                <input
-                  type="text"
-                  placeholder="Search requests..."
-                  className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E38B29]/50"
-                />
-              </div>
+              <h2 className="text-2xl font-bold text-[#2B2B2B]">All Requests ({allRequests.length})</h2>
+              <button 
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    const trips = JSON.parse(localStorage.getItem('trip_requests') || '[]');
+                    const regs = JSON.parse(localStorage.getItem('safarmate_registrations') || '[]');
+                    setTripRequests(trips);
+                    setUserRegistrations(regs);
+                  }
+                }}
+                className="px-4 py-2 bg-[#E38B29] text-white rounded-lg text-sm font-medium hover:bg-[#C77A23]"
+              >
+                Refresh
+              </button>
             </div>
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-100">
-                      <th className="text-left py-4 px-4 text-sm font-semibold text-[#2B2B2B]">Traveler</th>
+                      <th className="text-left py-4 px-4 text-sm font-semibold text-[#2B2B2B]">Name</th>
+                      <th className="text-left py-4 px-4 text-sm font-semibold text-[#2B2B2B]">Type</th>
                       <th className="text-left py-4 px-4 text-sm font-semibold text-[#2B2B2B]">City</th>
                       <th className="text-left py-4 px-4 text-sm font-semibold text-[#2B2B2B]">Date</th>
-                      <th className="text-left py-4 px-4 text-sm font-semibold text-[#2B2B2B]">Days</th>
-                      <th className="text-left py-4 px-4 text-sm font-semibold text-[#2B2B2B]">Guide</th>
+                      <th className="text-left py-4 px-4 text-sm font-semibold text-[#2B2B2B]">Email</th>
                       <th className="text-left py-4 px-4 text-sm font-semibold text-[#2B2B2B]">Status</th>
                       <th className="text-left py-4 px-4 text-sm font-semibold text-[#2B2B2B]">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {mockTripRequests.map((trip) => (
-                      <tr key={trip.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                        <td className="py-4 px-4">
-                          <div>
-                            <p className="font-medium text-[#2B2B2B]">{trip.traveler}</p>
-                            <p className="text-sm text-[#6B6B6B]">{trip.email}</p>
-                          </div>
-                        </td>
-                        <td className="py-4 px-4 text-[#2B2B2B]">{trip.city}</td>
-                        <td className="py-4 px-4 text-[#2B2B2B]">{trip.date}</td>
-                        <td className="py-4 px-4 text-[#2B2B2B]">{trip.days}</td>
-                        <td className="py-4 px-4 text-[#2B2B2B]">{trip.guide || "-"}</td>
-                        <td className="py-4 px-4">
-                          <StatusBadge status={trip.status} />
-                        </td>
-                        <td className="py-4 px-4">
-                          <button className="px-3 py-1.5 bg-[#E38B29] text-white rounded-lg text-sm font-medium hover:bg-[#C77A23] transition-colors">
-                            Assign Guide
-                          </button>
-                        </td>
+                    {allRequests.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-8 text-center text-[#6B6B6B]">No requests yet</td>
                       </tr>
-                    ))}
+                    ) : (
+                      allRequests.map((trip: any, index: number) => (
+                        <tr key={trip.id || index} className="border-b border-gray-50 hover:bg-gray-50/50">
+                          <td className="py-4 px-4">
+                            <div>
+                              <p className="font-medium text-[#2B2B2B]">{trip.fullName || trip.name}</p>
+                              <p className="text-sm text-[#6B6B6B]">{trip.phone || ''}</p>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${trip.type === 'guide' || trip.role === 'guide' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                              {trip.type || trip.serviceType || trip.role || 'Trip'}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4 text-[#2B2B2B]">{trip.city || 'Not specified'}</td>
+                          <td className="py-4 px-4 text-[#2B2B2B]">{trip.startDate ? new Date(trip.startDate).toLocaleDateString() : new Date(trip.createdAt).toLocaleDateString()}</td>
+                          <td className="py-4 px-4 text-[#2B2B2B]">{trip.email}</td>
+                          <td className="py-4 px-4">
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                              {trip.status || 'pending'}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4">
+                            <button className="px-3 py-1.5 bg-[#E38B29] text-white rounded-lg text-sm font-medium hover:bg-[#C77A23] transition-colors">
+                              View Details
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -444,55 +487,65 @@ export default function AdminPanel() {
         );
 
       case "guides":
+        const allGuideApps = [...guideApplications, ...userRegistrations.filter((r: any) => r.role === 'guide')];
+        
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-[#2B2B2B]">Guide Applications</h2>
+            <h2 className="text-2xl font-bold text-[#2B2B2B]">Guide Applications ({allGuideApps.length})</h2>
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-100">
-                      <th className="text-left py-4 px-4 text-sm font-semibold text-[#2B2B2B]">Guide</th>
+                      <th className="text-left py-4 px-4 text-sm font-semibold text-[#2B2B2B]">Name</th>
                       <th className="text-left py-4 px-4 text-sm font-semibold text-[#2B2B2B]">City</th>
+                      <th className="text-left py-4 px-4 text-sm font-semibold text-[#2B2B2B]">Phone</th>
                       <th className="text-left py-4 px-4 text-sm font-semibold text-[#2B2B2B]">Languages</th>
-                      <th className="text-left py-4 px-4 text-sm font-semibold text-[#2B2B2B]">Experience</th>
-                      <th className="text-left py-4 px-4 text-sm font-semibold text-[#2B2B2B]">Applied Date</th>
+                      <th className="text-left py-4 px-4 text-sm font-semibold text-[#2B2B2B]">Applied</th>
                       <th className="text-left py-4 px-4 text-sm font-semibold text-[#2B2B2B]">Status</th>
+                      <th className="text-left py-4 px-4 text-sm font-semibold text-[#2B2B2B]">OTP</th>
                       <th className="text-left py-4 px-4 text-sm font-semibold text-[#2B2B2B]">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {mockGuideApplications.map((guide) => (
-                      <tr key={guide.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                        <td className="py-4 px-4">
-                          <div>
-                            <p className="font-medium text-[#2B2B2B]">{guide.name}</p>
-                            <p className="text-sm text-[#6B6B6B]">{guide.email}</p>
-                          </div>
-                        </td>
-                        <td className="py-4 px-4 text-[#2B2B2B]">{guide.city}</td>
-                        <td className="py-4 px-4 text-[#2B2B2B]">{guide.languages.join(", ")}</td>
-                        <td className="py-4 px-4 text-[#2B2B2B]">{guide.experience}</td>
-                        <td className="py-4 px-4 text-[#2B2B2B]">{guide.appliedDate}</td>
-                        <td className="py-4 px-4">
-                          <StatusBadge status={guide.status} />
-                        </td>
-                        <td className="py-4 px-4">
-                          <div className="flex gap-2">
-                            {guide.status === "pending" && (
-                              <>
-                                <button className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center gap-1">
-                                  <Check size={14} /> Verify
-                                </button>
-                                <button className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center gap-1">
-                                  <X size={14} /> Reject
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </td>
+                    {allGuideApps.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="py-8 text-center text-[#6B6B6B]">No guide applications yet</td>
                       </tr>
-                    ))}
+                    ) : (
+                      allGuideApps.map((guide: any, index: number) => (
+                        <tr key={guide.id || index} className="border-b border-gray-50 hover:bg-gray-50/50">
+                          <td className="py-4 px-4">
+                            <div>
+                              <p className="font-medium text-[#2B2B2B]">{guide.fullName || guide.name}</p>
+                              <p className="text-sm text-[#6B6B6B]">{guide.email}</p>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4 text-[#2B2B2B]">{guide.city || 'Not specified'}</td>
+                          <td className="py-4 px-4 text-[#2B2B2B]">{guide.phone || '-'}</td>
+                          <td className="py-4 px-4 text-[#2B2B2B]">{guide.languages?.join(', ') || guide.language || '-'}</td>
+                          <td className="py-4 px-4 text-[#2B2B2B]">{guide.createdAt ? new Date(guide.createdAt).toLocaleDateString() : '-'}</td>
+                          <td className="py-4 px-4">
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                              {guide.status || 'pending'}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{guide.otp || '-'}</span>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="flex gap-2">
+                              <button className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
+                                Verify
+                              </button>
+                              <button className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">
+                                Reject
+                              </button>
+                            </div>
+                           </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>

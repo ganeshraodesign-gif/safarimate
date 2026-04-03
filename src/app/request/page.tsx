@@ -40,6 +40,8 @@ export default function RequestPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showOTP, setShowOTP] = useState(false);
+  const [tripOTP, setTripOTP] = useState('');
 
   const [formData, setFormData] = useState<FormData>({
     fullName: '',
@@ -91,7 +93,7 @@ export default function RequestPage() {
     } catch (error) {
       console.log('API failed, saving to localStorage...');
       storage.saveTripRequest(formData as unknown as Record<string, unknown>);
-      setIsSuccess(true);
+      setShowOTP(true);
     } finally {
       setIsSubmitting(false);
     }
@@ -105,6 +107,54 @@ export default function RequestPage() {
         : [...prev.languages, lang]
     }));
   };
+
+  if (showOTP) {
+    const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+    const displayOTP = tripOTP || generateOTP();
+    
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 py-20 px-4">
+          <div className="max-w-lg mx-auto bg-white rounded-2xl shadow-xl p-12 text-center">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">Request Submitted!</h2>
+            <p className="text-gray-600 mb-6">Your trip request has been received</p>
+            
+            <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 mb-6">
+              <p className="text-sm text-gray-600 mb-2">Trip Request OTP:</p>
+              <p className="text-4xl font-bold text-amber-600 tracking-wider">{displayOTP}</p>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-4 text-left mb-6">
+              <p className="text-sm font-semibold text-gray-700 mb-2">Trip Details:</p>
+              <p className="text-sm text-gray-600"><strong>Name:</strong> {formData.fullName}</p>
+              <p className="text-sm text-gray-600"><strong>Email:</strong> {formData.email}</p>
+              <p className="text-sm text-gray-600"><strong>City:</strong> {formData.city}</p>
+              <p className="text-sm text-gray-600"><strong>Dates:</strong> {formData.startDate} to {formData.endDate}</p>
+              <p className="text-sm text-gray-600"><strong>Service:</strong> {formData.serviceType}</p>
+            </div>
+
+            <p className="text-sm text-red-600 mb-4">
+              ⚠️ Save this OTP! Admin will verify your trip with this code.
+            </p>
+
+            <button
+              onClick={() => setShowOTP(false)}
+              className="text-[#E38B29] font-semibold hover:underline"
+            >
+              Submit Another Request
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
 
   if (isSuccess) {
     return (

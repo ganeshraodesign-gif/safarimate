@@ -74,6 +74,9 @@ export default function BecomeGuide() {
     updateField("pricePerDay", CITY_PRICES[city]?.toString() || "");
   };
 
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [generatedOTP, setGeneratedOTP] = useState('');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -82,13 +85,91 @@ export default function BecomeGuide() {
         method: 'POST',
         body: JSON.stringify(formData),
       });
-      alert("Application submitted successfully! We will review your profile and contact you soon.");
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedOTP(otp);
+      setShowSuccess(true);
     } catch (error) {
       console.log('API failed, saving to localStorage...');
-      storage.saveGuideApplication(formData as unknown as Record<string, unknown>);
-      alert("Application submitted successfully! We will review your profile and contact you soon.");
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedOTP(otp);
+      
+      const guideApps = JSON.parse(localStorage.getItem('safarmate_guide_applications') || '[]');
+      guideApps.push({
+        id: `GUIDE-${Date.now()}`,
+        ...formData,
+        otp: otp,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      });
+      localStorage.setItem('safarmate_guide_applications', JSON.stringify(guideApps));
+      
+      setShowSuccess(true);
     }
   };
+
+  if (showSuccess) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 py-20 px-4">
+          <div className="max-w-lg mx-auto bg-white rounded-2xl shadow-xl p-12 text-center">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">Application Submitted!</h2>
+            <p className="text-gray-600 mb-6">Your guide application has been received</p>
+            
+            <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 mb-6">
+              <p className="text-sm text-gray-600 mb-2">Application OTP:</p>
+              <p className="text-4xl font-bold text-amber-600 tracking-wider">{generatedOTP}</p>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-4 text-left mb-6">
+              <p className="text-sm font-semibold text-gray-700 mb-2">Guide Details:</p>
+              <p className="text-sm text-gray-600"><strong>Name:</strong> {formData.fullName}</p>
+              <p className="text-sm text-gray-600"><strong>Email:</strong> {formData.email}</p>
+              <p className="text-sm text-gray-600"><strong>Phone:</strong> {formData.phone}</p>
+              <p className="text-sm text-gray-600"><strong>City:</strong> {formData.city}</p>
+              <p className="text-sm text-gray-600"><strong>Languages:</strong> {formData.languages?.join(', ')}</p>
+            </div>
+
+            <p className="text-sm text-red-600 mb-4">
+              ⚠️ Save this OTP! Admin will verify your application with this code.
+            </p>
+
+            <button
+              onClick={() => {
+                setShowSuccess(false);
+                setFormData({
+                  fullName: '',
+                  phone: '',
+                  email: '',
+                  city: '',
+                  languages: [],
+                  education: '',
+                  experience: '',
+                  idProof: null,
+                  educationCertificate: null,
+                  policeVerification: null,
+                  profilePhoto: null,
+                  bio: '',
+                  availableDays: [],
+                  pricePerDay: '',
+                });
+                setCurrentStep(1);
+              }}
+              className="text-[#E38B29] font-semibold hover:underline"
+            >
+              Submit Another Application
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
 
   const renderStepIndicator = () => (
     <div className="flex justify-center mb-8">
