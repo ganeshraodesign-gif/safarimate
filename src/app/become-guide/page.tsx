@@ -35,6 +35,7 @@ export default function BecomeGuide() {
     educationCertificate: null as File | null,
     policeVerification: null as File | null,
     profilePhoto: null as File | null,
+    bankDetails: null as File | null,
     bio: "",
     availableDays: [] as string[],
     pricePerDay: "",
@@ -76,10 +77,33 @@ export default function BecomeGuide() {
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [generatedOTP, setGeneratedOTP] = useState('');
+  const [errors, setErrors] = useState<string[]>([]);
+
+  const validateForm = (): boolean => {
+    const newErrors: string[] = [];
+    
+    if (!formData.fullName?.trim()) newErrors.push('Full Name is required');
+    if (!formData.phone?.trim()) newErrors.push('Phone Number is required');
+    if (!formData.email?.trim()) newErrors.push('Email is required');
+    if (!formData.city) newErrors.push('Please select a city');
+    if (!formData.languages?.length) newErrors.push('Please select at least one language');
+    
+    if (!formData.idProof) newErrors.push('Aadhar Card / ID Proof is required');
+    if (!formData.profilePhoto) newErrors.push('Profile Photo is required');
+    if (!formData.educationCertificate) newErrors.push('Education Certificate is required');
+    if (!formData.policeVerification) newErrors.push('Police Verification is required');
+    if (!formData.bankDetails) newErrors.push('Bank Details are required');
+    
+    setErrors(newErrors);
+    return newErrors.length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!validateForm()) {
+      return;
+    }
     try {
       await fetchAPI(API_ENDPOINTS.GUIDES.REGISTER, {
         method: 'POST',
@@ -142,22 +166,23 @@ export default function BecomeGuide() {
             <button
               onClick={() => {
                 setShowSuccess(false);
-                setFormData({
-                  fullName: '',
-                  phone: '',
-                  email: '',
-                  city: '',
-                  languages: [],
-                  education: '',
-                  experience: '',
-                  idProof: null,
-                  educationCertificate: null,
-                  policeVerification: null,
-                  profilePhoto: null,
-                  bio: '',
-                  availableDays: [],
-                  pricePerDay: '',
-                });
+              setFormData({
+                fullName: '',
+                phone: '',
+                email: '',
+                city: '',
+                languages: [],
+                education: '',
+                experience: '',
+                idProof: null,
+                educationCertificate: null,
+                policeVerification: null,
+                profilePhoto: null,
+                bankDetails: null,
+                bio: '',
+                availableDays: [],
+                pricePerDay: '',
+              });
                 setCurrentStep(1);
               }}
               className="text-[#E38B29] font-semibold hover:underline"
@@ -400,8 +425,26 @@ export default function BecomeGuide() {
                       />
                       <label htmlFor="profilePhoto" className="cursor-pointer">
                         <div className="text-primary text-3xl mb-2">📸</div>
-                        <p className="text-text text-sm">{formData.profilePhoto?.name || "Upload Profile Photo"}</p>
+                        <p className="text-text text-sm">{formData.profilePhoto?.name || "Upload Profile Photo *"}</p>
                         <p className="text-text-secondary text-xs mt-1">JPG, PNG up to 5MB</p>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-text mb-2">Bank Details *</label>
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary transition cursor-pointer">
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => handleFileChange("bankDetails", e.target.files?.[0] || null)}
+                        className="hidden"
+                        id="bankDetails"
+                      />
+                      <label htmlFor="bankDetails" className="cursor-pointer">
+                        <div className="text-primary text-3xl mb-2">🏦</div>
+                        <p className="text-text text-sm">{formData.bankDetails?.name || "Upload Bank Details (Passbook/Cancelled Cheque)"}</p>
+                        <p className="text-text-secondary text-xs mt-1">PDF, JPG, PNG up to 5MB</p>
                       </label>
                     </div>
                   </div>

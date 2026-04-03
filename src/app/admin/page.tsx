@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   FileText,
@@ -277,22 +278,42 @@ function RatingStars({ rating }: { rating: number }) {
 }
 
 export default function AdminPanel() {
+  const router = useRouter();
   const [activeSection, setActiveSection] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [tripRequests, setTripRequests] = useState<any[]>([]);
   const [guideApplications, setGuideApplications] = useState<any[]>([]);
   const [userRegistrations, setUserRegistrations] = useState<any[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const trips = JSON.parse(localStorage.getItem('trip_requests') || '[]');
-      const guides = JSON.parse(localStorage.getItem('safarmate_guide_applications') || '[]');
-      const registrations = JSON.parse(localStorage.getItem('safarmate_registrations') || '[]');
-      setTripRequests(trips);
-      setGuideApplications(guides);
-      setUserRegistrations(registrations);
+      const isLoggedIn = localStorage.getItem('safarmate_admin_logged_in');
+      if (!isLoggedIn) {
+        router.push('/admin-login');
+      } else {
+        setIsAuthenticated(true);
+        const trips = JSON.parse(localStorage.getItem('trip_requests') || '[]');
+        const guides = JSON.parse(localStorage.getItem('safarmate_guide_applications') || '[]');
+        const registrations = JSON.parse(localStorage.getItem('safarmate_registrations') || '[]');
+        setTripRequests(trips);
+        setGuideApplications(guides);
+        setUserRegistrations(registrations);
+      }
     }
-  }, []);
+  }, [router]);
+
+  const handleLogout = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('safarmate_admin_logged_in');
+      localStorage.removeItem('safarmate_admin_email');
+    }
+    router.push('/admin-login');
+  };
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   const stats = {
     totalTrips: 156 + tripRequests.length,
